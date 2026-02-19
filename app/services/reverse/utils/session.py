@@ -3,6 +3,7 @@ Resettable session wrapper for reverse requests.
 """
 
 import asyncio
+import os
 from typing import Any, Iterable, Optional
 
 from curl_cffi.requests import AsyncSession
@@ -54,6 +55,11 @@ class ResettableSession:
 
     async def _request(self, method: str, *args: Any, **kwargs: Any):
         await self._maybe_reset()
+        
+        debug_mode = os.getenv("LOG_LEVEL", "INFO").upper() == "DEBUG"
+        if debug_mode:
+            kwargs["debug"] = True
+        
         response = await getattr(self._session, method)(*args, **kwargs)
         if self._reset_on_status and response.status_code in self._reset_on_status:
             self._reset_requested = True
