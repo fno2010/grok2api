@@ -26,6 +26,9 @@ class ResettableSession:
             browser = get_config("proxy.browser")
             if browser:
                 self._session_kwargs["impersonate"] = browser
+        # Enable debug when LOG_LEVEL=DEBUG
+        if os.getenv("LOG_LEVEL", "").upper() == "DEBUG":
+            self._session_kwargs["debug"] = True
         config_codes = get_config("retry.reset_session_status_codes")
         if reset_on_status is None:
             reset_on_status = config_codes if config_codes is not None else [403]
@@ -55,10 +58,6 @@ class ResettableSession:
 
     async def _request(self, method: str, *args: Any, **kwargs: Any):
         await self._maybe_reset()
-        
-        debug_mode = os.getenv("LOG_LEVEL", "INFO").upper() == "DEBUG"
-        if debug_mode:
-            kwargs["debug"] = True
         
         response = await getattr(self._session, method)(*args, **kwargs)
         if self._reset_on_status and response.status_code in self._reset_on_status:
